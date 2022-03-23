@@ -10,6 +10,7 @@ import (
 
 type PG interface {
 	CreateDB(dbname, username string) error
+	CreateDBFromTemplate(srcdbname, dbname, username string) error
 	CreateSchema(db, role, schema string, logger logr.Logger) error
 	CreateExtension(db, extension string, logger logr.Logger) error
 	CreateGroupRole(role string) error

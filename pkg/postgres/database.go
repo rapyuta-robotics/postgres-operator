@@ -8,18 +8,35 @@ import (
 )
 
 const (
-	CREATE_DB            = `CREATE DATABASE "%s"`
-	CREATE_SCHEMA        = `CREATE SCHEMA IF NOT EXISTS "%s" AUTHORIZATION "%s"`
-	CREATE_EXTENSION     = `CREATE EXTENSION IF NOT EXISTS "%s"`
-	ALTER_DB_OWNER       = `ALTER DATABASE "%s" OWNER TO "%s"`
-	DROP_DATABASE        = `DROP DATABASE "%s"`
-	GRANT_USAGE_SCHEMA   = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
-	GRANT_ALL_TABLES     = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
-	DEFAULT_PRIVS_SCHEMA = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
+	CREATE_DB               = `CREATE DATABASE "%s"`
+	CREATE_DB_FROM_TEMPLATE = `CREATE DATABASE "%s" WITH TEMPLATE "%s"`
+	CREATE_SCHEMA           = `CREATE SCHEMA IF NOT EXISTS "%s" AUTHORIZATION "%s"`
+	CREATE_EXTENSION        = `CREATE EXTENSION IF NOT EXISTS "%s"`
+	ALTER_DB_OWNER          = `ALTER DATABASE "%s" OWNER TO "%s"`
+	DROP_DATABASE           = `DROP DATABASE "%s"`
+	GRANT_USAGE_SCHEMA      = `GRANT USAGE ON SCHEMA "%s" TO "%s"`
+	GRANT_ALL_TABLES        = `GRANT %s ON ALL TABLES IN SCHEMA "%s" TO "%s"`
+	DEFAULT_PRIVS_SCHEMA    = `ALTER DEFAULT PRIVILEGES FOR ROLE "%s" IN SCHEMA "%s" GRANT %s ON TABLES TO "%s"`
 )
 
 func (c *pg) CreateDB(dbname, role string) error {
 	_, err := c.db.Exec(fmt.Sprintf(CREATE_DB, dbname))
+	if err != nil {
+		// eat DUPLICATE DATABASE ERROR
+		if err.(*pq.Error).Code != "42P04" {
+			return err
+		}
+	}
+
+	_, err = c.db.Exec(fmt.Sprintf(ALTER_DB_OWNER, dbname, role))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *pg) CreateDBFromTemplate(srcdbname,dbname, role string) error {
+	_, err := c.db.Exec(fmt.Sprintf(CREATE_DB_FROM_TEMPLATE, dbname,srcdbname))
 	if err != nil {
 		// eat DUPLICATE DATABASE ERROR
 		if err.(*pq.Error).Code != "42P04" {

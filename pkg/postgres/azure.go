@@ -50,6 +50,16 @@ func (azpg *azurepg) CreateDB(dbname, role string) error {
 	return azpg.pg.CreateDB(dbname, role)
 }
 
+func (azpg *azurepg) CreateDBFromTemplate(srcdbname, dbname, role string) error {
+	// Have to add the master role to the group role before we can transfer the database owner
+	err := azpg.GrantRole(role, azpg.GetRoleForLogin(azpg.user))
+	if err != nil {
+		return err
+	}
+
+	return azpg.pg.CreateDBFromTemplate(srcdbname, dbname, role)
+}
+
 func (azpg *azurepg) DropRole(role, newOwner, database string, logger logr.Logger) error {
 	azNewOwner := azpg.GetRoleForLogin(newOwner)
 	return azpg.pg.DropRole(role, azNewOwner, database, logger)
